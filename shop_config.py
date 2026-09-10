@@ -190,3 +190,60 @@ ITEMS["dog"] = {
         "desc": "Прочность: Вечная. Буст голды: +10%..100%."
     }
 }
+# ==================== 5. МАШИНЫ ====================
+ITEMS["car"] = {
+    "zhiguli": {
+        "name": "Жигули",
+        "price": 300,
+        "min_level": 1,
+        "max_durability": 500.0,
+        "time_reduction": 5,
+        "xp_boost": 0.05,
+        "desc": "Прочность 500%. Таймер: -5 мин. Опыт: +5%."
+    },
+    "lada_2110": {
+        "name": "Lada (ВАЗ) 2110",
+        "price": 400,
+        "min_level": 5,
+        "max_durability": 700.0,
+        "time_reduction": 10,
+        "xp_boost": 0.10,
+        "desc": "Прочность 700%. Таймер: -10 мин. Опыт: +10%."
+    },
+    "bukhanka": {
+        "name": "Буханка",
+        "price": 500,
+        "min_level": 6,
+        "max_durability": 1500.0,
+        "time_reduction": 12,
+        "xp_boost": 0.08,
+        "desc": "Прочность 1500%. Таймер: -12 мин. Опыт: +8%."
+    },
+    "lambo": {
+        "name": "Ламборгини",
+        "price": 6000,
+        "min_level": 8,
+        "max_durability": 200.0,
+        "time_reduction": 35,
+        "xp_boost": 0.15,
+        "desc": "Прочность 200%. Таймер: -35 мин. Опыт: +15%."
+    },
+    "nissan": {
+        "name": "Nissan Patrol Y61",
+        "price": 2000,
+        "min_level": 15,
+        "max_durability": 6000.0,
+        "time_reduction": 22,
+        "xp_boost": 0.20,
+        "desc": "Прочность 6000%. Таймер: -22 мин. Опыт: +20%."
+    },
+    "mercedes": {
+        "name": "Мерседес",
+        "price": 2100,
+        "min_level": 12,
+        "max_durability": 2000.0,
+        "time_reduction": 18,
+        "xp_boost": 0.25,
+        "desc": "Прочность 2000%. Таймер: -18 мин. Опыт: +25%."
+    }
+}
