@@ -139,3 +139,54 @@ ITEMS["dice"] = {
         
     }
 }
+# ==================== 4. ПСЫ ====================
+ITEMS["dog"] = {
+    "chihuahua": {
+        "name": "Чихуахуа",
+        "price": 100,
+        "min_level": 0,
+        "max_durability": float('inf'),
+        "money_bonus_range": (0.03, 0.10),
+        "desc": "Прочность: Вечная. Буст голды: +3%..10%."
+    },
+    "mongrel": {
+        "name": "Дворняга",
+        "price": 500,
+        "min_level": 3,
+        "max_durability": float('inf'),
+        "money_bonus_range": (0.05, 0.15),
+        "desc": "Прочность: Вечная. Буст голды: +5%..15%."
+    },
+    "husky": {
+        "name": "Хаски",
+        "price": 1000,
+        "min_level": 6,
+        "max_durability": float('inf'),
+        "money_bonus_range": (0.10, 0.20),
+        "desc": "Прочность: Вечная. Буст голды: +10%..20%."
+    },
+    "shepherd": {
+        "name": "Овчарка",
+        "price": 2000,
+        "min_level": 6,
+        "max_durability": float('inf'),
+        "money_bonus_range": (0.13, 0.30),
+        "desc": "Прочность: Вечная. Буст голды: +13%..30%."
+    },
+    "german_shepherd": {
+        "name": "Немецкая овчарка",
+        "price": 5000,
+        "min_level": 15,
+        "max_durability": float('inf'),
+        "money_bonus_range": (0.25, 0.50),
+        "desc": "Прочность: Вечная. Буст голды: +25%..50%."
+    },
+    "alabai": {
+        "name": "Алабай",
+        "price": 4500,
+        "min_level": 15,
+        "max_durability": float('inf'),
+        "money_bonus_range": (0.10, 1.00),
+        "desc": "Прочность: Вечная. Буст голды: +10%..100%."
+    }
+}
