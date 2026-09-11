@@ -19,3 +19,27 @@ def get_main_menu_keyboard():
         [InlineKeyboardButton("📝 Список команд", callback_data="menu_commands")]
     ]
     return InlineKeyboardMarkup(keyboard)
+    def get_shop_categories_keyboard():
+    """Выбор категорий в магазине"""
+    keyboard = [
+        [
+            InlineKeyboardButton("🧤 Перчатки", callback_data="shop_cat_gloves"),
+            InlineKeyboardButton("🎲 Кубики", callback_data="shop_cat_dice")
+        ],
+        [
+            InlineKeyboardButton("🀄 Домино", callback_data="shop_cat_domino"),
+            InlineKeyboardButton("🐕 Собаки", callback_data="shop_cat_dog")
+        ],
+        [
+            InlineKeyboardButton("🚗 Машины", callback_data="shop_cat_car")
+        ],
+        [
+            InlineKeyboardButton("🔙 В главное меню", callback_data="menu_back")
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+def get_back_to_menu_keyboard():
+    """Простая кнопка возврата в меню"""
+    keyboard = [[InlineKeyboardButton("🔙 В главное меню", callback_data="menu_back")]]
+    return InlineKeyboardMarkup(keyboard)
