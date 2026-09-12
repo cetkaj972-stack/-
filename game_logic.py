@@ -66,3 +66,82 @@ def wear_down_item(conn, user_id, item_type):
         cursor.execute('UPDATE inventory SET durability = ? WHERE id = ?', (new_dur, item_db_id))
         conn.commit()
         return None
+        from cards_config import CARDS, RARITY_CHANCES
+
+def roll_card(equipped_items):
+    """
+    Рандомный выбор карты с учётом бустов от перчаток и кубиков.
+    equipped_items: словарь активных шмоток юзера {type: id}
+    """
+    # 1. Считаем базовые шансы
+    chances = RARITY_CHANCES.copy()
+    
+    # Считаем бусты удачи от перчаток и кубиков
+    luck_boost = 0.0
+    
+    # Буст от перчаток
+    if "gloves" in equipped_items:
+        g_id = equipped_items["gloves"]
+        luck_boost += ITEMS["gloves"][g_id].get("luck_boost", 0.0)
+        
+    # Буст от кубиков
+    if "dice" in equipped_items:
+        d_id = equipped_items["dice"]
+        luck_boost += ITEMS["dice"][d_id].get("luck_boost", 0.0)
+        
+    # Применяем буст (снижаем шанс дефолтных карт в пользу редких, мификов и лег)
+    if luck_boost > 0:
+        boost_each = luck_boost / 3
+        chances["common"] = max(0.10, chances["common"] - luck_boost)
+        chances["rare"] += boost_each
+        chances["mythic"] += boost_each
+        chances["legendary"] += boost_each
+
+    # 2. Роллим редкость
+    rand_val = random.random()
+    cumulative = 0.0
+    chosen_rarity = "common"
+    
+    for rarity, chance in chances.items():
+        cumulative += chance
+        if rand_val <= cumulative:
+            chosen_rarity = rarity
+            break
+            
+    # 3. Выбираем случайную карту этой редкости
+    possible_cards = [card_id for card_id, info in CARDS.items() if info["rarity"] == chosen_rarity]
+    chosen_card_id = random.choice(possible_cards)
+    
+    return chosen_card_id
+
+def calculate_rewards(chosen_card_id, equipped_items, is_subbed):
+    """Расчёт итоговых наград (монеты, опыт) с учётом собак, машин и подписки"""
+    card_info = CARDS[chosen_card_id]
+    base_coins = card_info["coins"]
+    base_xp = card_info["xp"]
+    
+    # --- 1. БУСТ МОНЕТ (СОБАКИ) ---
+    coin_multiplier = 1.0
+    if "dog" in equipped_items:
+        dog_id = equipped_items["dog"]
+        min_b, max_b = ITEMS["dog"][dog_id]["money_bonus_range"]
+        # Рандомим процент буста в зависимости от собаки
+        coin_multiplier += random.uniform(min_b, max_b)
+        
+    if is_subbed:
+        coin_multiplier += 0.05 # +5% за подписку
+        
+    final_coins = int(base_coins * coin_multiplier)
+    
+    # --- 2. БУСТ ОПЫТА (МАШИНЫ) ---
+    xp_multiplier = 1.0
+    if "car" in equipped_items:
+        car_id = equipped_items["car"]
+        xp_multiplier += ITEMS["car"][car_id].get("xp_boost", 0.0)
+        
+    if is_subbed:
+        xp_multiplier += 0.06 # +6% за подписку
+        
+    final_xp = round(base_xp * xp_multiplier, 4)
+    
+    return final_coins, final_xp
