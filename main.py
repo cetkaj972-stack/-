@@ -308,3 +308,146 @@ async def handle_buy_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE)
     conn.close()
     
     await query.edit_message_text(f"🎉 Успешная покупка! Ты приобрел *{info['name']}*! Вещь добавлена в твой инвентарь.", reply_markup=get_shop_categories_keyboard(), parse_mode="Markdown")
+python
+# ==================== ИНВЕНТАРЬ И КОЛЛЕКЦИЯ ====================
+
+async def handle_inventory_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Выбор категории инвентаря для просмотра вещей"""
+    query = update.callback_query
+    text = "🎒 *Твой инвентарь снаряжения*\nВыбери категорию, чтобы надеть или снять вещи:"
+    
+    keyboard = [
+        [
+            InlineKeyboardButton("🧤 Перчатки", callback_data="inv_cat_gloves"),
+            InlineKeyboardButton("🎲 Кубики", callback_data="inv_cat_dice")
+        ],
+        [
+            InlineKeyboardButton("🀄 Домино", callback_data="inv_cat_domino"),
+            InlineKeyboardButton("🐕 Собаки", callback_data="inv_cat_dog")
+        ],
+        [
+            InlineKeyboardButton("🚗 Машины", callback_data="inv_cat_car")
+        ],
+        [InlineKeyboardButton("🔙 В главное меню", callback_data="menu_back")]
+    ]
+    
+    if query:
+        await query.answer()
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+    else:
+        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+
+async def handle_inventory_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Показ вещей игрока в выбранной категории инвентаря"""
+    query = update.callback_query
+    await query.answer()
+    
+    category = query.data.split("_")[-1] # gloves, dice, domino, dog, car
+    user_id = query.from_user.id
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, item_id, durability, is_equipped FROM inventory WHERE user_id = ? AND item_type = ?",
+        (user_id, category)
+    )
+    items = cursor.fetchall()
+    conn.close()
+
+    if not items:
+        text = f"🎒 В категории *{category.upper()}* у тебя пока ничего нет. Купи что-нибудь в магазине!"
+        keyboard = [[InlineKeyboardButton("🔙 Назад", callback_data="menu_inventory")]]
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+        return
+
+    text = f"🎒 Твои предметы в категории *{category.upper()}*:\n\n"
+    keyboard = []
+    
+    for item in items:
+        info = ITEMS[category][item["item_id"]]
+        status = "🟢 НАДЕТО" if item["is_equipped"] else "🔴 В рюкзаке"
+        durability_str = f"{int(item['durability'])}%" if item["durability"] != float("inf") else "Вечный"
+        
+        text += f"▪️ *{info['name']}*\n↳ Состояние: {durability_str} | Статус: {status}\n\n"
+        
+        # Кнопка действия (надеть/снять)
+        action_text = f"Снять {info['name']}" if item["is_equipped"] else f"Надеть {info['name']}"
+        keyboard.append([InlineKeyboardButton(action_text, callback_data=f"inv_action_{item['id']}")])
+
+    keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="menu_inventory")])
+    await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+
+async def handle_inventory_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Процесс надевания/снятия шмотки с автоматическим снятием старой вещи этого же типа"""
+    query = update.callback_query
+    await query.answer()
+    
+    db_id = int(query.data.split("_")[-1])
+    user_id = query.from_user.id
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Находим выбранный предмет
+    cursor.execute("SELECT item_type, item_id, is_equipped FROM inventory WHERE id = ? AND user_id = ?", (db_id, user_id))
+    item = cursor.fetchone()
+    
+    if not item:
+        conn.close()
+        await query.edit_message_text("❌ Предмет не найден!", reply_markup=get_back_to_menu_keyboard())
+        return
+        
+    ite
+
+m_type = item["item_type"]
+    is_equipped = item["is_equipped"]
+    
+    if is_equipped:
+        # Если вещь надета — просто снимаем её
+        cursor.execute("UPDATE inventory SET is_equipped = 0 WHERE id = ?", (db_id,))
+        msg = "🎒 Ты снял предмет."
+    else:
+        # Если вещь не надета — сначала снимаем ВСЕ другие вещи этого же типа, чтобы не стакались
+        cursor.execute("UPDATE inventory SET is_equipped = 0 WHERE user_id = ? AND item_type = ?", (user_id, item_type))
+        # Надеваем новую вещь
+        cursor.execute("UPDATE inventory SET is_equipped = 1 WHERE id = ?", (db_id,))
+        msg = f"🟢 Ты успешно экипировал предмет!"
+        
+    conn.commit()
+    conn.close()
+    
+    await query.edit_message_text(msg, reply_markup=get_back_to_menu_keyboard())
+
+async def handle_collection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Просмотр коллекции собранных карт игрока"""
+    query = update.callback_query
+    if query:
+        await query.answer()
+        user_id = query.from_user.id
+    else:
+        user_id = update.effective_user.id
+        
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT card_id, quantity FROM collection WHERE user_id = ?", (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    user_cards = {row["card_id"]: row["quantity"] for row in rows}
+    
+    text = "🖼 *Твоя коллекция карточек Нифес:*\n\n"
+    total_unique = len(user_cards)
+    
+    # Красиво выводим список всех 25 карт
+    for card_id, info in CARDS.items():
+        qty = user_cards.get(card_id, 0)
+        status_emoji = info["emoji"] if qty > 0 else "🔒"
+        qty_text = f" — *{qty} шт.*" if qty > 0 else " — _Не выбита_"
+        text += f"{status_emoji} *{info['name']}*{qty_text}\n"
+        
+    text += f"\n📊 Всего собрано уникальных карт: *{total_unique}/25*"
+    
+    if query:
+        await query.edit_message_text(text, reply_markup=get_back_to_menu_keyboard(), parse_mode="Markdown")
+    else:
+        await update.message.reply_text(text, reply_markup=get_back_to_menu_keyboard(), parse_mode="Markdown")
