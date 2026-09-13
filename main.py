@@ -25,3 +25,40 @@ else:
 if not BOT_TOKEN:
     print("Ошибка: Токен не найден в token.txt!")
     sys.exit(1)
+# ==================== РЕГИСТРАЦИЯ И ПОДПИСКА ====================
+
+def register_user_if_not_exists(user_id, username):
+    """Регистрация нового игрока в базе данных"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id FROM users WHERE user_id = ?", (user_id,))
+    if not cursor.fetchone():
+        cursor.execute(
+            "INSERT INTO users (user_id, username, coins, level, xp) VALUES (?, ?, 0, 1, 0.0)",
+            (user_id, username)
+        )
+        conn.commit()
+    conn.close()
+
+async def check_tg_subscription(bot, user_id):
+    """Проверка подписки на ТГ-канал blood_robots_death"""
+    try:
+        member = await bot.get_chat_member(chat_id=CHANNEL_CHAT_ID, user_id=user_id)
+        # Если статус участника не левый, то подписан
+        if member.status in ['member', 'administrator', 'creator']:
+            return True
+    except Exception:
+        pass
+    return False
+
+def get_user_equipped_items(user_id):
+    """Получить словарь надетых шмоток игрока"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT item_type, item_id FROM inventory WHERE user_id = ? AND is_equipped = 1",
+        (user_id,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return {row["item_type"]: row["item_id"] for row in rows}
