@@ -209,3 +209,102 @@ async def handle_get_card(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=chat.id, text=msg, parse_mode="Markdown")
         else:
             await update.message.reply_text(msg, parse_mode="Markdown")
+            python
+# ==================== ИНТЕРАКТИВНЫЙ МАГАЗИН ====================
+
+async def handle_shop_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Открытие главного меню магазина"""
+    query = update.callback_query
+    text = "🛒 Добро пожаловать в магазин прокачки!\nЗдесь ты можешь купить перчатки, кубики, домино, псов и тачки.\n\nВыбери категорию:"
+    if query:
+        await query.answer()
+        await query.edit_message_text(text, reply_markup=get_shop_categories_keyboard())
+    else:
+        await update.message.reply_text(text, reply_markup=get_shop_categories_keyboard())
+
+async def handle_shop_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Отображение товаров в выбранной категории"""
+    query = update.callback_query
+    await query.answer()
+    
+    category = query.data.split("_")[-1] # Получаем gloves, dice, domino, dog, car
+    user_id = query.from_user.id
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT level FROM users WHERE user_id = ?", (user_id,))
+    player_lvl = cursor.fetchone()["level"]
+    conn.close()
+
+    text = f"📦 Категория: *{category.upper()}*\n\n"
+    keyboard = []
+    
+    # Перебираем все товары из shop_config.py
+    for item_id, info in ITEMS[category].items():
+        is_locked = player_lvl < info["min_level"]
+        lock_icon = "🔒" if is_locked else "🛒"
+        lvl_req = f" (Нужен {info['min_level']} лвл)" if is_locked else ""
+        
+        button_text = f"{lock_icon} {info['name']} — {info['price']} монет{lvl_req}"
+        # Кнопка отправляет запрос на покупку
+        callback_data = f"buy_req_{category}_{item_id}"
+        keyboard.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
+        
+        text += f"▪️ *{info['name']}*\n↳ {info['desc']}\n↳ Цена: {info['price']} монет | Доступ со следующего уровня: {info['min_level']}\n\n"
+
+    keyboard.append([InlineKeyboardButton("🔙 Назад в магазин", callback_data="menu_shop")])
+    await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+
+async def handle_buy_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Запрос на подтверждение покупки"""
+    query = update.callback_query
+    await query.answer()
+    
+    _, _, item_type, item_id = query.data.split("_")
+    info = ITEMS[item_type][item_id]
+    
+    text = f"❓ Ты уверен, что хочешь купить *{info['name']}* за {info['price']} монет?\n\nОписание: {info['desc']}"
+    await query.edit_message_text(text, reply_markup=get_buy_keyboard(item_type, item_id, info["price"]), parse_mode="Markdown")
+
+async def handle_buy_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка покупки и зачисление в БД"""
+    query = update.callback_query
+    await query.answer()
+    
+    _, _, item_type, item_id = query.data.split("_")
+    info = ITEMS[item_type][item_id]
+    user_id = query.from_user.id
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Получаем инфу об игроке
+    cursor.execute("SELECT coins, level FROM users WHERE user_id = ?", (user_id,))
+    player = cursor.fetchone()
+    
+    if player["level"] < info["min_level"]:
+        conn.close()
+        await query.edit_message_text(f"❌ Твой уровень ({player['level']}) слишком мал! Требуется уровень {info['min_level']}.", reply_markup=get_shop_categories_keyboard())
+        return
+        
+    if player["coins"] < info["price"]:
+        conn.close()
+        await query.edit_message_text(f"❌ Недостаточно монет! У тебя {player['coins']} монет, а нужно {info['price']}.", reply_markup=get_shop_categories_keyboard())
+        return
+
+    # Списываем монеты
+    new_coins = player["coins"] - info["price"
+
+]
+    cursor.execute("UPDATE users SET coins = ? WHERE user_id = ?", (new_coins, user_id))
+    
+    # Начисляем вещь в инвентарь (прочность берем максимальную из конфига)
+    cursor.execute('''
+        INSERT INTO inventory (user_id, item_type, item_id, durability, is_equipped)
+        VALUES (?, ?, ?, ?, 0)
+    ''', (user_id, item_type, item_id, info["max_durability"]))
+    
+    conn.commit()
+    conn.close()
+    
+    await query.edit_message_text(f"🎉 Успешная покупка! Ты приобрел *{info['name']}*! Вещь добавлена в твой инвентарь.", reply_markup=get_shop_categories_keyboard(), parse_mode="Markdown")
