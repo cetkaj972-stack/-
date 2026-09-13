@@ -451,3 +451,150 @@ async def handle_collection(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(text, reply_markup=get_back_to_menu_keyboard(), parse_mode="Markdown")
     else:
         await update.message.reply_text(text, reply_markup=get_back_to_menu_keyboard(), parse_mode="Markdown")
+python
+# ==================== ТОПЫ, СПРАВКА И СТАРТ ====================
+
+async def handle_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Отображение таблицы лидеров по уровню и монетам"""
+    query = update.callback_query
+    if query:
+        await query.answer()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Берем ТОП-10 игроков по уровню и опыту
+    cursor.execute("SELECT username, level, coins FROM users ORDER BY level DESC, xp DESC LIMIT 10")
+    top_players = cursor.fetchall()
+    conn.close()
+
+    text = "🏆 *ТАБЛИЦА ЛИДЕРОВ «GOYDA BOT»* 🏆\n\n"
+    if not top_players:
+        text += "Здесь пока пусто. Стань первым лидером!"
+    else:
+        for idx, player in enumerate(top_players, 1):
+            username = player["username"] or f"ID: {player['user_id']}"
+            text += f"{idx}. *{username}* — {player['level']} лвл | {player['coins']} 💰\n"
+
+    if query:
+        await query.edit_message_text(text, reply_markup=get_back_to_menu_keyboard(), parse_mode="Markdown")
+    else:
+        await update.message.reply_text(text, reply_markup=get_back_to_menu_keyboard(), parse_mode="Markdown")
+
+async def handle_commands_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Показ списка всех команд и фраз"""
+    query = update.callback_query
+    if query:
+        await query.answer()
+
+    text = (
+        "📝 *СПИСОК КОМАНД И ФРАЗ* (нажми, чтобы скопировать):\n\n"
+        "🃏 *Получить карточку:*\n"
+        "`нифес`\n`нефес`\n`получить карточку`\n`карту пж`\n`позязя карту`\n`Гойда`\n`дай карту!`\n\n"
+        "🛒 *Открыть магазин:*\n"
+        "`магаз`\n`магазинчик`\n`нифес магаз!`\n`дай мне колбас!`\n\n"
+        "⚙️ *Главное меню:*\n"
+        "`менюшка`\n`меню`"
+    )
+
+    if query:
+        await query.edit_message_text(text, reply_markup=get_back_to_menu_keyboard(), parse_mode="Markdown")
+    else:
+        await update.message.reply_text(text, reply_markup=get_back_to_menu_keyboard(), parse_mode="Markdown")
+
+async def handle_menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Вызов интерактивного главного меню"""
+    user = update.effective_user
+    username = user.username or user.first_name
+    register_user_if_not_exists(user.id, username)
+    
+    text = (
+        f"👋 Здорово, бро {username}!\n"
+        f"Добро пожаловать в игру «GOYDA BOT»!\n\n"
+        f"Тут ты можешь собирать бесплатные карточки каждые 50 минут, "
+        f"прокачивать перчатки, кубики, домино, покупать псов и тачки.\n"
+        f"Жми кнопку ниже и погнали!"
+    )
+    await update.message.reply_text(text, reply_markup=get_main_menu_keyboard())
+
+async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик всех текстовых сообщений из чатов"""
+    text = update.message.text.lower().strip()
+
+    # Список фраз на получение карты
+    get_card_keywords = ["нифес", "нефес", "получить карточку", "карту пж", "позязя карту", "гойда", "дай карту!"]
+    if text in get_card_keywords:
+        await handle_get_card(update, context)
+        return
+
+    # Список фраз на магазин
+    shop_keywords = ["магаз", "магазинчик", "нифес магаз!", "дай мне колбас!"]
+    if text in shop_keywords:
+        await handle_shop_menu(update, context)
+        return
+
+    # Список фраз на меню
+    menu_keywords = ["менюшка", "меню"]
+    if text in menu_keywords:
+        await handle_menu_command(update, context)
+        return
+
+async def button_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Главный роутер всех нажатий на инлайн-кн
+
+опки"""
+    query = update.callback_query
+    data = query.data
+
+    if data == "menu_get_card":
+        await handle_get_card(update, context)
+    elif data == "menu_shop":
+        await handle_shop_menu(update, context)
+    elif data == "menu_inventory":
+        await handle_inventory_menu(update, context)
+    elif data == "menu_collection":
+        await handle_collection(update, context)
+    elif data == "menu_leaderboard":
+        await handle_leaderboard(update, context)
+    elif data == "menu_commands":
+        await handle_commands_list(update, context)
+    elif data == "menu_back":
+        # Возврат в меню: меняем текст сообщения на меню
+        user = query.from_user
+        username = user.username or user.first_name
+        text = f"👋 Здорово, бро {username}!\nВыбирай нужное действие:"
+        await query.edit_message_text(text, reply_markup=get_main_menu_keyboard())
+    elif data.startswith("shop_cat_"):
+        await handle_shop_category(update, context)
+    elif data.startswith("buy_req_"):
+        await handle_buy_request(update, context)
+    elif data.startswith("buy_confirm_"):
+        await handle_buy_confirm(update, context)
+    elif data.startswith("inv_cat_"):
+        await handle_inventory_category(update, context)
+    elif data.startswith("inv_action_"):
+        await handle_inventory_action(update, context)
+
+def main():
+    """Запуск бота"""
+    # Инициализация базы данных
+    init_db()
+
+    # Создание приложения бота
+    application = Application.builder().token(BOT_TOKEN).build()
+
+    # Регистрация обработчиков команд
+    application.add_handler(CommandHandler("start", handle_menu_command))
+    application.add_handler(CommandHandler("menu", handle_menu_command))
+
+    # Обработчик инлайн-кнопок
+    application.add_handler(CallbackQueryHandler(button_router))
+
+    # Обработчик обычных текстовых фраз
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
+
+    # Запуск поллинга
+    print("🚀 GOYDA BOT успешно запущен и готов к работе!")
+    application.run_polling()
+
+if __name__ == "__main__":
+    main()
