@@ -1,61 +1,27 @@
-import sqlite3
 import os
+import sys
+from datetime import datetime, timedelta
+import random
 
-DB_PATH = "goyda.db"
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
-def get_db_connection():
-    """Быстрое подключение к базе данных"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+from database import get_db_connection, init_db
+from shop_config import ITEMS
+from keyboards import get_main_menu_keyboard, get_shop_categories_keyboard, get_back_to_menu_keyboard, get_inventory_keyboard, get_buy_keyboard
+from helpers import get_cooldown_message, format_time_delta
+from cards_config import CARDS
+from game_logic import check_level_up, wear_down_item, roll_card, calculate_rewards
 
-def init_db():
-    """Создание таблиц, если их ещё нет"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
+TG_CHANNEL_URL = "https://t.me/blood_robots_death"
+CHANNEL_CHAT_ID = "@blood_robots_death"
 
-    # 1. Таблица юзеров
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY,
-            username TEXT,
-            coins INTEGER DEFAULT 0,
-            level INTEGER DEFAULT 1,
-            xp REAL DEFAULT 0.0,
-            last_card_time TEXT,
-            spam_count INTEGER DEFAULT 0,
-            last_spam_time TEXT,
-            is_subscribed INTEGER DEFAULT 0
-        )
-    ''')
+if os.path.exists("token.txt"):
+    with open("token.txt", "r") as f:
+        BOT_TOKEN = f.read().strip()
+else:
+    BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 
-    # 2. Таблица инвентаря (вещи игрока)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS inventory (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            item_type TEXT, -- 'gloves', 'domino', 'dice', 'dog', 'car'
-            item_id TEXT,   -- например, 'leather_gloves'
-            durability REAL, -- текущая прочность в %
-            is_equipped INTEGER DEFAULT 0, -- 1 - надето, 0 - в рюкзаке
-            FOREIGN KEY(user_id) REFERENCES users(user_id)
-        )
-    ''')
-
-    # 3. Таблица коллекции карт
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS collection (
-            user_id INTEGER,
-            card_id TEXT, -- 'png1' ... 'png25'
-            quantity INTEGER DEFAULT 0,
-            PRIMARY KEY(user_id, card_id),
-            FOREIGN KEY(user_id) REFERENCES users(user_id)
-        )
-    ''')
-
-    conn.commit()
-    conn.close()
-
-# Авто-инициализация при импорте файла
-if not os.path.exists(DB_PATH):
-    init_db()
+if not BOT_TOKEN:
+    print("Ошибка: Токен не найден в token.txt!")
+    sys.exit(1)
