@@ -381,14 +381,13 @@ async def handle_inventory_action(update: Update, context: ContextTypes.DEFAULT_
     """Процесс надевания/снятия шмотки с автоматическим снятием старой вещи этого же типа"""
     query = update.callback_query
     await query.answer()
-    
+
     db_id = int(query.data.split("_")[-1])
     user_id = query.from_user.id
     
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Находим выбранный предмет
     cursor.execute("SELECT item_type, item_id, is_equipped FROM inventory WHERE id = ? AND user_id = ?", (db_id, user_id))
     item = cursor.fetchone()
     
@@ -397,21 +396,16 @@ async def handle_inventory_action(update: Update, context: ContextTypes.DEFAULT_
         await query.edit_message_text("❌ Предмет не найден!", reply_markup=get_back_to_menu_keyboard())
         return
         
-    ite
-
-m_type = item["item_type"]
+    item_type = item["item_type"]
     is_equipped = item["is_equipped"]
     
     if is_equipped:
-        # Если вещь надета — просто снимаем её
         cursor.execute("UPDATE inventory SET is_equipped = 0 WHERE id = ?", (db_id,))
         msg = "🎒 Ты снял предмет."
     else:
-        # Если вещь не надета — сначала снимаем ВСЕ другие вещи этого же типа, чтобы не стакались
         cursor.execute("UPDATE inventory SET is_equipped = 0 WHERE user_id = ? AND item_type = ?", (user_id, item_type))
-        # Надеваем новую вещь
         cursor.execute("UPDATE inventory SET is_equipped = 1 WHERE id = ?", (db_id,))
-        msg = f"🟢 Ты успешно экипировал предмет!"
+        msg = "🟢 Ты успешно экипировал предмет!"
         
     conn.commit()
     conn.close()
