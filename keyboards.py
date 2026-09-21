@@ -19,7 +19,8 @@ def get_main_menu_keyboard():
         [InlineKeyboardButton("📝 Список команд", callback_data="menu_commands")]
     ]
     return InlineKeyboardMarkup(keyboard)
-    def get_shop_categories_keyboard():
+
+def get_shop_categories_keyboard():
     """Выбор категорий в магазине"""
     keyboard = [
         [
@@ -47,8 +48,6 @@ def get_back_to_menu_keyboard():
 def get_inventory_keyboard(items, item_type):
     """
     Кнопки для просмотра вещей в инвентаре.
-    items: список вещей из БД
-    item_type: категория ('gloves', 'dice', 'domino', 'dog', 'car')
     """
     keyboard = []
     # Для каждой шмотки в этой категории делаем кнопку
