@@ -62,7 +62,7 @@ def get_user_equipped_items(user_id):
     rows = cursor.fetchall()
     conn.close()
     return {row["item_type"]: row["item_id"] for row in rows}
-python
+    
 # ==================== ЛОГИКА ТАЙМЕРА И СБОРА КАРТЫ ====================
 
 async def handle_get_card(update: Update, context: ContextTypes.DEFAULT_TYPE):
