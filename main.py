@@ -444,7 +444,6 @@ async def handle_collection(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(text, reply_markup=get_back_to_menu_keyboard(), parse_mode="Markdown")
     else:
         await update.message.reply_text(text, reply_markup=get_back_to_menu_keyboard(), parse_mode="Markdown")
-python
 # ==================== ТОПЫ, СПРАВКА И СТАРТ ====================
 
 async def handle_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
