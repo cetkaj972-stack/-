@@ -308,7 +308,6 @@ async def handle_buy_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE)
     conn.close()
     
     await query.edit_message_text(f"🎉 Успешная покупка! Ты приобрел *{info['name']}*! Вещь добавлена в твой инвентарь.", reply_markup=get_shop_categories_keyboard(), parse_mode="Markdown")
-python
 # ==================== ИНВЕНТАРЬ И КОЛЛЕКЦИЯ ====================
 
 async def handle_inventory_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
