@@ -509,13 +509,12 @@ async def handle_menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик всех текстовых сообщений из чатов"""
-   if update.message and update.message.text:
-               text = update.message.text.lower().strip()
-        else:
-            # Если это не текстовое сообщение, или текста нет, просто игнорируем его
-            return # Выходим из функции
-    
-    
+    if update.message and update.message.text:
+        text = update.message.text.lower().strip()
+    else:
+        # Если это не текстовое сообщение, или текста нет, просто игнорируем его
+        return # Выходим из функции
+
     # Список фраз на получение карты
     get_card_keywords = ["нифес", "нефес", "получить карточку", "карту пж", "позязя карту", "гойда", "дай карту!"]
     if text in get_card_keywords:
