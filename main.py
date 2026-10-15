@@ -509,8 +509,8 @@ async def handle_menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик всех текстовых сообщений из чатов"""
-        if update.message and update.message.text:
-            text = update.message.text.lower().strip()
+   if update.message and update.message.text:
+               text = update.message.text.lower().strip()
         else:
             # Если это не текстовое сообщение, или текста нет, просто игнорируем его
             return # Выходим из функции
