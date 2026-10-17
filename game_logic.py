@@ -1,5 +1,6 @@
 import random
 from shop_config import ITEMS
+from cards_config import CARDS, RARITY_CHANCES
 
 def calculate_next_level_xp(current_level):
     """
