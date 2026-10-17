@@ -1,5 +1,5 @@
 import random
-from shop_config import ITEMS
+from shop_config import ITEMS, RARITY_CHANCES
 
 def calculate_next_level_xp(current_level):
     """
